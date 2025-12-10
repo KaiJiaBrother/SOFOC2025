@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>马茂杰的备考能量站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 卡片基础样式 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 选中状态 */
+        .card.is-done {
+            opacity: 0.6;
+            filter: grayscale(0.8);
+        }
+        .card.is-done::after {
+            content: "DONE";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem;
+            font-weight: 900;
+            color: #10b981;
+            border: 4px solid #10b981;
+            padding: 10px 30px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 过滤器按钮 */
+        .filter-btn {
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background-color: #1e293b;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 底部进度条 */
+        .progress-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e2e8f0;
+            padding: 15px 40px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .prog-track {
+            flex: 1;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        /* 顶部随机按钮 */
+        .random-banner {
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        .random-banner:active { transform: scale(0.99); }
+
+        /* 复选框样式 */
+        .check-circle {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .check-circle:hover { border-color: #94a3b8; }
+        .card.is-done .check-circle {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .grid-cols-3 { grid-template-columns: 1fr; }
+            .progress-fixed { padding: 10px 20px; flex-direction: column; align-items: stretch; gap: 5px; }
+            .prog-track { margin: 5px 0; }
+        }
+    </style>
+</head>
+<body class="p-6 pb-24 max-w-[1400px] mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <div class="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">EXCLUSIVE FOR MAOJIE</div>
+            <h1 class="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+                备考能量站 <span class="text-amber-500">⚡</span>
+            </h1>
+        </div>
+        <div class="text-right">
+            <div class="text-xs font-bold text-gray-400 uppercase">Total Cards</div>
+            <div class="text-3xl font-black text-slate-900" id="totalCount">35</div>
+        </div>
+    </div>
+
+    <!-- Random Button -->
+    <div class="random-banner shadow-lg shadow-indigo-500/20" onclick="pickRandom()">
+        <span>🎲</span> 今天练什么？点我抽取惊喜
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-3 overflow-x-auto pb-6 mb-2 no-scrollbar" id="filterContainer">
+        <button class="filter-btn active px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('all')">全部</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('语文')">语文</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('数学')">数学</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('英语')">英语</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('物理')">物理</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('化学')">化学</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('地理')">地理</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('心语')">To You</button>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cardGrid">
+        <!-- Cards will be injected here via JS -->
+    </div>
+
+    <!-- Fixed Footer -->
+    <div class="progress-fixed">
+        <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</div>
+        <div class="prog-track">
+            <div class="prog-fill" id="progBar"></div>
+        </div>
+        <div class="text-sm font-bold text-slate-800 whitespace-nowrap">
+            <span id="doneCount">0</span> / <span id="totalDisplay">35</span> Done
+        </div>
+    </div>
+
+    <script>
+        // --- 马茂杰专属数据源 (5 cards per subject x 7 categories = 35 total) ---
+        const cardsData = [
+            // --- 1. 语文 (Chinese) - Red ---
+            { id: 101, subject: "语文", en: "CHINESE", color: "red", title: "诗歌鉴赏", quote: "“读不懂诗，先读题目和作者。”", review: "诗歌主观题得分不高。做题前先看标题（暗示情感）、作者（知人论世）和注释（关键背景）。找出意象，分析意境。", action: "找一首杜甫的律诗，圈出所有意象并分析情感。" },
+            { id: 102, subject: "语文", en: "CHINESE", color: "red", title: "作文思辨", quote: "“不要一边倒，要辩证看。”", review: "议论文观点太绝对。要学会用“但是”、“诚然”来体现思维的严密性。分析问题时，既要看到好的一面，也要看到潜在的风险。", action: "修改上次作文的论证段落，增加一组辩证分析。" },
+            { id: 103, subject: "语文", en: "CHINESE", color: "red", title: "文言文实词", quote: "“实词是文言文的砖。”", review: "翻译句子不通顺，往往是因为关键实词没译准。遇到不认识的字，结合字形（形声字）或上下文语境猜测。", action: "整理5个文言文中的通假字或古今异义词。" },
+            { id: 104, subject: "语文", en: "CHINESE", color: "red", title: "散文阅读", quote: "“形散而神不散。”", review: "概括段落大意时，要抓住关键词句（首尾句）。分析句子含意时，要还原到文中去，联系上下文解释表层和深层含义。", action: "做一篇散文阅读，专门练习“句子赏析”题。" },
+            { id: 105, subject: "语文", en: "CHINESE", color: "red", title: "卷面书写", quote: "“字迹清晰，好感倍增。”", review: "语文主观题字数多，字迹一旦潦草，阅卷老师很难辨认。保持行款整齐，字距适中，不要涂成黑疙瘩。", action: "坚持每天练字10分钟，重点练习连笔字的清晰度。" },
+
+            // --- 2. 数学 (Math) - Blue (痛点：运算) ---
+            { id: 201, subject: "数学", en: "MATH", color: "blue", title: "运算死穴", quote: "“算的对，比做得快更重要。”", review: "解析几何第一问求轨迹方程都能算错，这分丢得太冤了！复杂的式子不要心算，老老实实写在草稿纸上。每一步变形都要复核。", action: "找一道解析几何大题，只做第一问，验算两遍确保全对。" },
+            { id: 202, subject: "数学", en: "MATH", color: "blue", title: "数列通项", quote: "“累加累乘，看清角标。”", review: "数列求通项公式，n和n-1的关系要搞清。n=1时是否符合通式？不仅要会套公式，还要注意公式的适用范围。", action: "默写等差、等比数列的前n项和公式。" },
+            { id: 203, subject: "数学", en: "MATH", color: "blue", title: "导数切线", quote: "“切点既在曲线上，又在切线上。”", review: "利用导数求切线方程是基础。f'(x0)是斜率。注意区分“在某点处的切线”和“过某点的切线”。一个是切点，一个未必是。", action: "做一道“求曲线过某点的切线方程”的易错题。" },
+            { id: 204, subject: "数学", en: "MATH", color: "blue", title: "立体几何", quote: "“建系要准，坐标别错。”", review: "建立空间直角坐标系时，要在图中明确标出x,y,z轴。点坐标写错，后面全盘皆输。写完坐标先带入边长验证一下。", action: "画一个正方体，建立两种不同的坐标系并写出顶点坐标。" },
+            { id: 205, subject: "数学", en: "MATH", color: "blue", title: "错题不过夜", quote: "“今日错，今日毕。”", review: "数学的窟窿不能留到明天。计算错误也要反思：是草稿太乱？还是公式记混？把错因写在错题旁边，红笔标注。", action: "整理今天的数学作业错题，分析计算错误的具体步骤。" },
+
+            // --- 3. 英语 (English) - Emerald (Leona 重点关注) ---
+            { id: 301, subject: "英语", en: "ENGLISH", color: "emerald", title: "词汇陷阱", quote: "“单词认识你，你不认识它。”", review: "完形填空丢分往往是因为熟词生义或者形近词辨析。compromise 是妥协，comprise 是包含。这些长得像的词必须专门整理。", action: "整理一组形近词（如 adapt/adopt/adjust）。" },
+            { id: 302, subject: "英语", en: "ENGLISH", color: "emerald", title: "从句逻辑", quote: "“that 和 what，天壤之别。”", review: "定语从句和名词性从句混淆。What = the thing that，它在从句中必须做成分；That 在名从里只起连接作用。搞清成分是关键。", action: "分析5个包含 that/what 从句的长难句。" },
+            { id: 303, subject: "英语", en: "ENGLISH", color: "emerald", title: "写作升级", quote: "“用高级词汇替换大白话。”", review: "作文里不要总用 good, bad, happy。试试 beneficial, detrimental, delighted。高级词汇能瞬间提升作文档次。Leona 老师看着呢！", action: "把作文里常用的5个简单形容词替换成高级词汇。" },
+            { id: 304, subject: "英语", en: "ENGLISH", color: "emerald", title: "阅读细节", quote: "“原文定位，同义替换。”", review: "细节题不要凭印象选。一定要回原文找到出处。正确选项往往是原文的同义替换，而不是原词重现。", action: "做一篇阅读理解，找出正确选项对应的原文句子。" },
+            { id: 305, subject: "英语", en: "ENGLISH", color: "emerald", title: "听力预判", quote: "“听前读题，心中有数。”", review: "听力开始前的几分钟是黄金时间。圈出选项中的关键词（时间、地点、数字），预测对话内容。听到相关信息立刻警觉。", action: "利用碎片时间进行一次听力模拟，重点练习预读选项。" },
+
+            // --- 4. 物理 (Physics) - Violet ---
+            { id: 401, subject: "物理", en: "PHYSICS", color: "violet", title: "电场类平抛", quote: "“分解运动，各行其是。”", review: "带电粒子在电场中的偏转是类平抛。水平方向匀速，竖直方向匀加速。记住偏移量 y = 1/2 at² 和偏转角 tanθ = vy/vx。", action: "推导一遍带电粒子在偏转电场中的侧移量 y 的公式。" },
+            { id: 402, subject: "物理", en: "PHYSICS", color: "violet", title: "电势能与功", quote: "“电场力做正功，电势能减小。”", review: "功能关系是物理的核心。W = -ΔEp。正电荷顺着电场线跑，电场力做正功，电势能减小，动能增加。这套逻辑要像条件反射一样。", action: "画图分析正负电荷在电场中运动时的能量变化情况。" },
+            { id: 403, subject: "物理", en: "PHYSICS", color: "violet", title: "电路动态", quote: "“串反并同。”", review: "闭合电路欧姆定律的动态分析。滑动变阻器电阻变大，总电流变小，路端电压变大。口诀“串反并同”能帮你快速判断电压电流变化。", action: "做一道电路动态分析的选择题，用“串反并同”验证。" },
+            { id: 404, subject: "物理", en: "PHYSICS", color: "violet", title: "多过程问题", quote: "“分段分析，受力图为王。”", review: "物理大题往往涉及多个过程（加速+偏转+磁场）。必须画出运动轨迹图，分段列方程。切忌把不同过程的公式混在一起。", action: "找一道多过程物理大题，画出详细的运动轨迹图。" },
+            { id: 405, subject: "物理", en: "PHYSICS", color: "violet", title: "实验读数", quote: "“估读！估读！估读！”", review: "游标卡尺不估读，螺旋测微器要估读。电压表电流表看量程。读数题是送分题，绝对不能因为粗心丢分。", action: "练习3组螺旋测微器和游标卡尺的读数。" },
+
+            // --- 5. 化学 (Chemistry) - Fuchsia (重点突破) ---
+            { id: 501, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "平衡移动", quote: "“勒夏特列原理。”", review: "改变条件（浓温压），平衡向减弱这种改变的方向移动。注意：催化剂不改平衡，只改速率。充入惰性气体恒容不移动，恒压才移动。", action: "列表总结浓度、温度、压强对化学平衡的影响。" },
+            { id: 502, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "反应速率", quote: "“控制变量，看斜率。”", review: "探究反应速率影响因素时，必须控制变量。图像题中，斜率越大速率越快。注意区分瞬时速率和平均速率。", action: "做一道化学反应速率的图像分析题。" },
+            { id: 503, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "平衡常数K", quote: "“K只与温度有关。”", review: "无论浓度压强怎么变，只要温度不变，K就不变。写K的表达式时，固体和纯液体不写入。注意幂指数是系数。", action: "默写合成氨反应的平衡常数表达式。" },
+            { id: 504, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "电解质水解", quote: "“越弱越水解，谁强显谁性。”", review: "盐类水解规律：有弱才水解，无弱不水解。判断溶液酸碱性，看谁强（强酸弱碱盐显酸性）。书写水解方程式用可逆号。", action: "写出碳酸钠和氯化铵的水解离子方程式。" },
+            { id: 505, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "计算规范", quote: "“三段式是万能钥匙。”", review: "化学平衡计算必须列“三段式”（起始、转化、平衡）。数据对齐，逻辑清晰，不容易出错。别偷懒直接在脑子里算。", action: "找一道化学平衡计算题，严格用三段式步骤求解。" },
+
+            // --- 6. 地理 (Geography) - Sky (优势学科) ---
+            { id: 601, subject: "地理", en: "GEOGRAPHY", color: "sky", title: "大气环流", quote: "“气压带风带，冷暖干湿。”", review: "地理优势要保持。气候成因是重点：受什么气压带或风带控制？信风一般干（离岸），西风一般湿。季风看海陆。", action: "手绘全球气压带风带分布图及季节移动方向。" },
+            { id: 602, subject: "地理", en: "GEOGRAPHY", color: "sky", title: "水体运动", quote: "“补给关系要看图。”", review: "河流补给形式：雨水（夏汛）、冰雪融水（夏汛但日变化大）、地下水（稳定）。看径流量曲线图判断补给类型。", action: "分析一张河流径流量变化图，判断主要补给水源。" },
+            { id: 603, subject: "地理", en: "GEOGRAPHY", color: "sky", title: "岩石圈", quote: "“三类岩石，相互转化。”", review: "岩浆岩（喷出/侵入）、沉积岩（层理/化石）、变质岩。地壳物质循环图的箭头方向要理顺。特别是“变质作用”和“重熔再生”。", action: "画出地壳物质循环示意图，标出转化条件。" },
+            { id: 604, subject: "地理", en: "GEOGRAPHY", color: "sky", title: "规范术语", quote: "“告别口语化。”", review: "虽然地理分不错，但答题术语还需打磨。别说“雨水多”，要说“降水丰沛”；别说“好种地”，要说“土壤肥沃，耕地面积广”。", action: "背诵农业区位分析的5个标准术语。" },
+            { id: 605, subject: "地理", en: "GEOGRAPHY", color: "sky", title: "区域定位", quote: "“经纬度是眼睛。”", review: "看到地图先看经纬度和图例。定位准了，气候地形特征自然就出来了。不要只盯着轮廓猜，要用数据说话。", action: "在世界地图上标出5个重要城市的经纬度。" },
+
+            // --- 7. 心语 (To You) - Amber (导师团队统一视角) ---
+            { id: 901, subject: "心语", en: "TO YOU", color: "amber", title: "警惕假努力", quote: "“不要用战术上的勤奋掩盖战略上的懒惰。”", review: "茂杰，我们看你每天都很忙，但物理和数学的分数说明你思考得不够深。刷题不总结等于白刷。哪怕一天只做通一道题，也比囫囵吞枣做十道强。", action: "今天做完题后，停下来发呆5分钟，回想一下解题思路。" },
+            { id: 902, subject: "心语", en: "TO YOU", color: "amber", title: "相信你的潜能", quote: "“Your potential is limitless.”", review: "英语和地理的成绩证明了你的学习能力。你其实很聪明，只是有时候太急了。慢下来，把细节做好，你会发现自己比想象中更强大。", action: "当你想放弃的时候，告诉自己：再坚持一分钟。" },
+            { id: 903, subject: "心语", en: "TO YOU", color: "amber", title: "死磕运算力", quote: "“算是理科生的尊严。”", review: "从今天起，把“粗心”这个词从你的字典里删掉。那是练得少！每天强制自己做30分钟纯计算练习，直到算吐为止。没有捷径可走。", action: "本周目标：数学作业零计算错误。" },
+            { id: 904, subject: "心语", en: "TO YOU", color: "amber", title: "坚实的后盾", quote: "“We are always here for you.”", review: "不管物理电场有多难，化学平衡有多绕，记得老师们都在你身后。我们是一个团队，遇到困难随时来找我们，不要一个人扛。", action: "给老师分享一个你今天英语学习的小进步。" },
+            { id: 905, subject: "心语", en: "TO YOU", color: "amber", title: "跨界思维", quote: "“用地理的宏观解物理的微观。”", review: "物化地是很棒的组合。试着用地理的宏观看待化学的环保应用，用物理的逻辑推导地理的成因。打通学科壁垒，你会发现学习的新乐趣。", action: "找一个物理知识点解释生活中的地理现象。" }
+        ];
+
+        // --- 逻辑部分 ---
+        let doneList = JSON.parse(localStorage.getItem('maojie_cards_done') || '[]');
+        document.getElementById('totalCount').innerText = cardsData.length;
+        document.getElementById('totalDisplay').innerText = cardsData.length;
+
+        function renderGrid(filter = 'all') {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            
+            const filtered = filter === 'all' 
+                ? cardsData 
+                : cardsData.filter(c => c.subject === filter);
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">暂无该分类卡片</div>`;
+                return;
+            }
+
+            filtered.forEach(card => {
+                const isDone = doneList.includes(card.id);
+                // 动态颜色类
+                const bgLight = `bg-${card.color}-50`;
+                const textDark = `text-${card.color}-800`;
+                const textBase = `text-${card.color}-600`;
+                const bgBase = `bg-${card.color}-500`; // 复盘标签背景
+
+                const html = `
+                <div class="card ${isDone ? 'is-done' : ''}" onclick="toggleCard(${card.id})">
+                    <div class="p-6 flex-1">
+                        <!-- Top Row -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${bgBase}"></span>
+                                <span class="text-xs font-bold ${textBase} tracking-widest uppercase">${card.en}</span>
+                            </div>
+                            <div class="check-circle" id="check-${card.id}">
+                                ${isDone ? '✓' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Title & Quote -->
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2 leading-tight">${card.title}</h2>
+                        <p class="text-gray-400 italic text-sm mb-6 font-serif">${card.quote}</p>
+
+                        <!-- Review Box -->
+                        <div class="${bgLight} rounded-xl p-4 mb-4 relative overflow-hidden">
+                             <div class="absolute top-0 left-0 ${bgBase} text-white text-[10px] font-bold px-2 py-1 rounded-br-lg">
+                                核心复盘
+                            </div>
+                            <p class="${textDark} text-sm leading-relaxed mt-2 text-justify">
+                                ${card.review}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Footer -->
+                    <div class="bg-slate-900 p-4 text-white">
+                        <div class="flex items-start gap-3">
+                            <span class="text-xl">🚀</span>
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Action</div>
+                                <div class="text-sm font-medium leading-snug">${card.action}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                grid.innerHTML += html;
+            });
+        }
+
+        function toggleCard(id) {
+            if(doneList.includes(id)) {
+                doneList = doneList.filter(d => d !== id);
+            } else {
+                doneList.push(id);
+                // 简单的庆祝效果
+                confettiEffect();
+            }
+            localStorage.setItem('maojie_cards_done', JSON.stringify(doneList));
+            
+            // 局部更新
+            renderGrid(document.querySelector('.filter-btn.active').innerText === '全部' ? 'all' : document.querySelector('.filter-btn.active').innerText);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = cardsData.length;
+            const done = doneList.length;
+            document.getElementById('doneCount').innerText = done;
+            
+            const pct = (done / total) * 100;
+            document.getElementById('progBar').style.width = `${pct}%`;
+        }
+
+        function filterCards(type) {
+            // UI Button State
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === type || (type === 'all' && btn.innerText === '全部')) {
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-white', 'text-slate-900');
+                    btn.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-white');
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                }
+            });
+            renderGrid(type);
+        }
+
+        function pickRandom() {
+            const notDone = cardsData.filter(c => !doneList.includes(c.id));
+            if(notDone.length === 0) {
+                alert("太棒了！你已经完成了所有卡片！🎉");
+                return;
+            }
+            const randomCard = notDone[Math.floor(Math.random() * notDone.length)];
+            alert(`🎲 命运卡片抽取：\n\n【${randomCard.subject}】${randomCard.title}\n\n${randomCard.quote}\n\n快去列表里找到它并完成吧！`);
+        }
+
+        function confettiEffect() {
+            console.log("Card Done! 🎉");
+        }
+
+        // Init
+        renderGrid();
+        updateProgress();
+
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>
