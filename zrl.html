@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>展睿麟的备考能量站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 卡片基础样式 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 选中状态 */
+        .card.is-done {
+            opacity: 0.6;
+            filter: grayscale(0.8);
+        }
+        .card.is-done::after {
+            content: "DONE";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem;
+            font-weight: 900;
+            color: #10b981;
+            border: 4px solid #10b981;
+            padding: 10px 30px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 过滤器按钮 */
+        .filter-btn {
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background-color: #1e293b;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 底部进度条 */
+        .progress-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e2e8f0;
+            padding: 15px 40px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .prog-track {
+            flex: 1;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        /* 顶部随机按钮 */
+        .random-banner {
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        .random-banner:active { transform: scale(0.99); }
+
+        /* 复选框样式 */
+        .check-circle {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .check-circle:hover { border-color: #94a3b8; }
+        .card.is-done .check-circle {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .grid-cols-3 { grid-template-columns: 1fr; }
+            .progress-fixed { padding: 10px 20px; flex-direction: column; align-items: stretch; gap: 5px; }
+            .prog-track { margin: 5px 0; }
+        }
+    </style>
+</head>
+<body class="p-6 pb-24 max-w-[1400px] mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <div class="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">EXCLUSIVE FOR RUILIN</div>
+            <h1 class="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+                备考能量站 <span class="text-amber-500">⚡</span>
+            </h1>
+        </div>
+        <div class="text-right">
+            <div class="text-xs font-bold text-gray-400 uppercase">Total Cards</div>
+            <div class="text-3xl font-black text-slate-900" id="totalCount">35</div>
+        </div>
+    </div>
+
+    <!-- Random Button -->
+    <div class="random-banner shadow-lg shadow-indigo-500/20" onclick="pickRandom()">
+        <span>🎲</span> 今天练什么？点我抽取惊喜
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-3 overflow-x-auto pb-6 mb-2 no-scrollbar" id="filterContainer">
+        <button class="filter-btn active px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('all')">全部</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('语文')">语文</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('数学')">数学</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('英语')">英语</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('物理')">物理</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('化学')">化学</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('生物')">生物</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('心语')">To You</button>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cardGrid">
+        <!-- Cards will be injected here via JS -->
+    </div>
+
+    <!-- Fixed Footer -->
+    <div class="progress-fixed">
+        <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</div>
+        <div class="prog-track">
+            <div class="prog-fill" id="progBar"></div>
+        </div>
+        <div class="text-sm font-bold text-slate-800 whitespace-nowrap">
+            <span id="doneCount">0</span> / <span id="totalDisplay">35</span> Done
+        </div>
+    </div>
+
+    <script>
+        // --- 展睿麟专属数据源 (5 cards per subject x 7 categories = 35 total) ---
+        const cardsData = [
+            // --- 1. 语文 (Chinese) - Red ---
+            { id: 101, subject: "语文", en: "CHINESE", color: "red", title: "非连文本细节", quote: "“勾画不仔细，选项两行泪。”", review: "非连文本失误在于“阅读不够细致”。选项与原文的比对必须严丝合缝，不能凭印象。审题时把关键词圈出来，尤其是否定词。", action: "做一篇非连文本，用红笔圈出所有选项与原文的出入点。" },
+            { id: 102, subject: "语文", en: "CHINESE", color: "red", title: "微写作审题", quote: "“问你观点，别只谈原因。”", review: "微写作扣分在于“文不对题”。题目要求针对现象“发表看法”（论述观点），你却一直在“阐释原因”。审题决定生死！", action: "找出3个微写作真题，只写第一句：明确表达你的观点。" },
+            { id: 103, subject: "语文", en: "CHINESE", color: "red", title: "议论文深度", quote: "“看得见是表象，看不见是根源。”", review: "大写作《看得见与看不见》结构不错，但要冲击一类文，必须深入挖掘“为什么”。从现象到本质，多问几个“Why”。", action: "修改期中考作文的中间段落，增加一层因果分析。" },
+            { id: 104, subject: "语文", en: "CHINESE", color: "red", title: "文言文多义词", quote: "“字字落实，语境为王。”", review: "基础非常优秀，但多义词的精准义项还需打磨。在具体语境中，这个词到底是实指还是虚指？是动词还是名词？", action: "整理5个常见文言实词的特殊义项（如：兵、除、绝）。" },
+            { id: 105, subject: "语文", en: "CHINESE", color: "red", title: "红楼梦情节", quote: "“不仅看热闹，还要记细节。”", review: "主观题作答不够具体。提到某个情节时，要有起因、经过、结果，不能笼统地说“表现了...”。细节才是得分点。", action: "复述一遍“宝玉挨打”或“探春理家”的核心细节。" },
+
+            // --- 2. 数学 (Math) - Blue (重点突破) ---
+            { id: 201, subject: "数学", en: "MATH", color: "blue", title: "回归课本基础", quote: "“椭圆方程都不会，怎么做大题？”", review: "基础概念丢分太痛了！椭圆标准方程、焦距、特殊角三角函数值...这些必须像呼吸一样自然。别好高骛远，先抓基础。", action: "默写椭圆、双曲线的标准方程及a,b,c的关系。" },
+            { id: 202, subject: "数学", en: "MATH", color: "blue", title: "计算力特训", quote: "“算对才是硬道理。”", review: "整份试卷因计算失分太多。思路对不等于得分。立体几何求角、解三角形第一问，全毁在算错数上。慢一点，算两遍。", action: "每天做3道纯计算题（如解方程组、复数运算），要求全对。" },
+            { id: 203, subject: "数学", en: "MATH", color: "blue", title: "立体几何规范", quote: "“向量法要准，公式别背反。”", review: "你有整体框架感，这很好。但空间向量求角的公式用错了，坐标也写错。这是“送分题”变“送命题”。", action: "重新推导一遍线面角和二面角的向量公式，并标注法向量方向。" },
+            { id: 204, subject: "数学", en: "MATH", color: "blue", title: "每日计划", quote: "“不积跬步，无以至千里。”", review: "数学薄弱需要“笨功夫”。制定每日计划，今天搞定正余弦定理，明天搞定直线与圆。把大目标拆解成每天的小胜利。", action: "制定本周的“数学复活计划”，列出每天要攻克的一个小考点。" },
+            { id: 205, subject: "数学", en: "MATH", color: "blue", title: "心态建设", quote: "“别怕它，它只是纸老虎。”", review: "50分不是你的终点。相信“科学的重复”。只要基础概念补上来，中档题拿下，分数翻倍不是梦。稳定心态，不焦虑。", action: "做一道中档难度的解析几何题，只求第一问做对。" },
+
+            // --- 3. 英语 (English) - Emerald ---
+            { id: 301, subject: "英语", en: "ENGLISH", color: "emerald", title: "非谓语动词", quote: "“to do, doing, done, 谁主沉浮？”", review: "语法填空错5个，重灾区是非谓语动词。分清做状语还是定语，是主动还是被动，是目的还是结果。这是高二重点。", action: "整理非谓语动词做状语的三种情况（原因、结果、目的）例句。" },
+            { id: 302, subject: "英语", en: "ENGLISH", color: "emerald", title: "熟词生义", quote: "“熟悉的单词最容易骗人。”", review: "完形填空丢分在于语境词义辨析。不要只记单词的第一个意思，要结合上下文看它在文中的特定含义（正能量/情感色彩）。", action: "积累3个熟词生义（如 observed: 遵守; promise: 有...的希望）。" },
+            { id: 303, subject: "英语", en: "ENGLISH", color: "emerald", title: "阅读双保险", quote: "“逆向思维，倒推意图。”", review: "阅读C篇的主旨题如果拿不准，试试“逆向思维”：假设选项是标题，文章应该怎么写？对比原文，排除偏差。", action: "做一篇阅读C篇，专门练习“主旨大意”题的排除法。" },
+            { id: 304, subject: "英语", en: "ENGLISH", color: "emerald", title: "作文卷面", quote: "“字迹是门面，逻辑是里子。”", review: "书写扣分不划算。衡水体练起来！另外，内容逻辑要通顺，避免小瑕疵。多用高分句型（强调句、倒装句）。", action: "每天临摹15分钟英语字帖，追求圆润饱满。" },
+            { id: 305, subject: "英语", en: "ENGLISH", color: "emerald", title: "听力磨耳", quote: "“保持一周一套的节奏。”", review: "听力口语有些许扣分。利用碎片时间，发现问题要记录根源：是连读没听清？还是单词没反应过来？", action: "本周完成一套听力练习，并跟读听不懂的段落。" },
+
+            // --- 4. 物理 (Physics) - Violet ---
+            { id: 401, subject: "物理", en: "PHYSICS", color: "violet", title: "电场图像 E-x", quote: "“面积即电压，斜率看场强。”", review: "E-x 图像理解不到位。图像线下面积代表电势差（电压）。一定要搞清物理意义，别死记硬背。", action: "找一道 E-x 图像的选择题，分析斜率和面积的含义。" },
+            { id: 402, subject: "物理", en: "PHYSICS", color: "violet", title: "复合场圆周", quote: "“等效重力法是神器。”", review: "带电粒子在复合场中的圆周运动，c点是电场力与弹力充当向心力。能量分析要全面：除重力外其他力做的功=机械能变化。", action: "画出带电小球在电重叠加场中做圆周运动的受力分析图。" },
+            { id: 403, subject: "物理", en: "PHYSICS", color: "violet", title: "动能定理", quote: "“一个力都不能漏。”", review: "应用动能定理熟练度不够。加速场运动分析不清。左边写功（所有外力），右边写动能变化。公式要烂熟于心。", action: "用动能定理推导带电粒子在电场中加速末速度的公式。" },
+            { id: 404, subject: "物理", en: "PHYSICS", color: "violet", title: "静平衡模型", quote: "“特殊角用正交分解。”", review: "库仑力平衡问题是基本功。遇到特殊角，果断建立坐标系正交分解；非特殊角，试试矢量三角形图解法。", action: "整理一道三力平衡（库仑力+重力+拉力）的典型例题。" },
+            { id: 405, subject: "物理", en: "PHYSICS", color: "violet", title: "电容器动态", quote: "“抓住不变量。”", review: "电容器充放电及动态分析：先看是断开电源（Q不变）还是保持连接（U不变），再用 C=εS/4πkd 分析 C 的变化。", action: "列表总结电容器两类动态变化问题的分析步骤。" },
+
+            // --- 5. 化学 (Chemistry) - Fuchsia (重点：粗心) ---
+            { id: 501, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "拒绝低级失误", quote: "“焓变的正号，千万别漏！”", review: "数错化学键（4个当成2个）、漏写焓变的“+”号、计算代入颠倒...这些都是送分题啊！太可惜了。必须建立“检查机制”。", action: "在草稿纸上醒目地写下：注意正负号！注意系数！" },
+            { id: 502, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "电化学原理", quote: "“正负阴阳，得失电子。”", review: "电解池氧化还原判断不清。电流方向->判断正负极->判断阴阳极->判断得失电子。逻辑链条不能断。", action: "画出电解水的装置图，标出电子流动方向和电极反应式。" },
+            { id: 503, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "平衡状态判断", quote: "“正逆速率相等，才是平衡。”", review: "误选A选项。必须是“一正一反”且速率相等才能判断平衡。压强不变是否意味着平衡？要看反应前后气体体积是否变化。", action: "整理5种判断化学平衡状态的常见标志（本质+现象）。" },
+            { id: 504, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "基础常识", quote: "“硫酸根不氧化，氧气才氧化。”", review: "方程式全错暴露常识缺失。普通条件下硫酸根无氧化性！要联想到常见的“氧气氧化亚铁离子”模型。多联想，多迁移。", action: "默写氧气氧化氢氧化亚铁的化学方程式。" },
+            { id: 505, subject: "化学", en: "CHEMISTRY", color: "fuchsia", title: "心态与难题", quote: "“遇到新情境，找熟悉模型。”", review: "选择题后几道很难，不要被新颖的皮迷惑。剥离出核心信息，用学过的原理去解释。实在太难的选项（如D），先用排除法。", action: "找一道信息量大的化学选择题，尝试只读图表提取信息。" },
+
+            // --- 6. 生物 (Biology) - Teal (优势学科) ---
+            { id: 601, subject: "生物", en: "BIOLOGY", color: "teal", title: "实验设计", quote: "“单一变量，对照原则。”", review: "实验题是主要失分点。设计对照组时，一定要排除无关变量干扰。实验组探究因变量，对照组提供基准。", action: "分析一道实验大题，找出它的自变量、因变量和无关变量。" },
+            { id: 602, subject: "生物", en: "BIOLOGY", color: "teal", title: "语言表述", quote: "“用生物学术语说话。”", review: "结论描述不够准确。别用大白话，要用“显著差异”、“正相关”、“抑制/促进”等专业术语。模仿参考答案的表述。", action: "对比自己的实验题答案和标准答案，找出表述差异。" },
+            { id: 603, subject: "生物", en: "BIOLOGY", color: "teal", title: "核心概念", quote: "“概念不清，做题发晕。”", review: "生态位、环境容纳量、种间竞争...这些概念要像字典一样印在脑子里。基础扎实是拿高分的前提。", action: "默写“生态位”和“环境容纳量(K值)”的准确定义。" },
+            { id: 604, subject: "生物", en: "BIOLOGY", color: "teal", title: "遗传题", quote: "“染色体互换，显隐性推导。”", review: "遗传题常考“染色体互换”导致的实验结果与理论不符。要熟练掌握分离定律和自由组合定律的区别。", action: "画出减数分裂过程中染色体交叉互换的示意图。" },
+            { id: 605, subject: "生物", en: "BIOLOGY", color: "teal", title: "医学潜力", quote: "“生物是医学的基石。”", review: "生物是你最强的学科（年级14名！），这证明了你在生命科学领域的潜力。保持这份优势，它是你通向医学殿堂的敲门砖。", action: "给自己定个小目标：下次生物考试冲击年级前10。" },
+
+            // --- 7. 心语 (To You) - Amber ---
+            { id: 901, subject: "心语", en: "TO YOU", color: "amber", title: "医学梦想", quote: "“为生命科学与医学而战。”", review: "睿麟，你的报告里藏着一个伟大的梦想。生物的优势是你天赋的证明，而物理化学是医学影像和药理的基础。学好它们，是在为未来的患者负责。", action: "想象自己穿着白大褂的样子，告诉自己：这道物理题我能行。" },
+            { id: 902, subject: "心语", en: "TO YOU", color: "amber", title: "科学的重复", quote: "“学习的本质是科学的重复。”", review: "新高考不信运气，信实力。不要因为数学50分而气馁，那只是因为重复得还不够科学。刻意练习，查漏补缺，分数自然会涨。", action: "今天把一道做错的数学题，遮住答案重新做一遍。" },
+            { id: 903, subject: "心语", en: "TO YOU", color: "amber", title: "严谨的力量", quote: "“严谨是医生的第一守则。”", review: "化学的“+”号、语文的审题，这些看似是“粗心”，实则是严谨度不够。现在养成严谨细致的习惯，未来才能守护生命的希望。", action: "下次做题前，深呼吸，对自己说：我要像做手术一样严谨。" },
+            { id: 904, subject: "心语", en: "TO YOU", color: "amber", title: "主动出击", quote: "“记录错题比刷题更重要。”", review: "很高兴看到你面对薄弱学科没有退缩，而是主动整理笔记。这份主动改进的意识，比一时的分数珍贵一万倍。继续保持！", action: "整理今天的错题，并在旁边写下当时为什么做错。" },
+            { id: 905, subject: "心语", en: "TO YOU", color: "amber", title: "Tony的后盾", quote: "“Always call for you.”", review: "高中是一场马拉松，高二正是弯道超车的关键期。无论数学有多难啃，Tony老师永远在为你打call。我们一起把短板补齐！", action: "遇到解决不了的困难，直接来找Tony老师聊聊。" }
+        ];
+
+        // --- 逻辑部分 ---
+        let doneList = JSON.parse(localStorage.getItem('ruilin_cards_done') || '[]');
+        document.getElementById('totalCount').innerText = cardsData.length;
+        document.getElementById('totalDisplay').innerText = cardsData.length;
+
+        function renderGrid(filter = 'all') {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            
+            const filtered = filter === 'all' 
+                ? cardsData 
+                : cardsData.filter(c => c.subject === filter);
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">暂无该分类卡片</div>`;
+                return;
+            }
+
+            filtered.forEach(card => {
+                const isDone = doneList.includes(card.id);
+                // 动态颜色类
+                const bgLight = `bg-${card.color}-50`;
+                const textDark = `text-${card.color}-800`;
+                const textBase = `text-${card.color}-600`;
+                const bgBase = `bg-${card.color}-500`; // 复盘标签背景
+
+                const html = `
+                <div class="card ${isDone ? 'is-done' : ''}" onclick="toggleCard(${card.id})">
+                    <div class="p-6 flex-1">
+                        <!-- Top Row -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${bgBase}"></span>
+                                <span class="text-xs font-bold ${textBase} tracking-widest uppercase">${card.en}</span>
+                            </div>
+                            <div class="check-circle" id="check-${card.id}">
+                                ${isDone ? '✓' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Title & Quote -->
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2 leading-tight">${card.title}</h2>
+                        <p class="text-gray-400 italic text-sm mb-6 font-serif">${card.quote}</p>
+
+                        <!-- Review Box -->
+                        <div class="${bgLight} rounded-xl p-4 mb-4 relative overflow-hidden">
+                             <div class="absolute top-0 left-0 ${bgBase} text-white text-[10px] font-bold px-2 py-1 rounded-br-lg">
+                                核心复盘
+                            </div>
+                            <p class="${textDark} text-sm leading-relaxed mt-2 text-justify">
+                                ${card.review}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Footer -->
+                    <div class="bg-slate-900 p-4 text-white">
+                        <div class="flex items-start gap-3">
+                            <span class="text-xl">🚀</span>
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Action</div>
+                                <div class="text-sm font-medium leading-snug">${card.action}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                grid.innerHTML += html;
+            });
+        }
+
+        function toggleCard(id) {
+            if(doneList.includes(id)) {
+                doneList = doneList.filter(d => d !== id);
+            } else {
+                doneList.push(id);
+                // 简单的庆祝效果
+                confettiEffect();
+            }
+            localStorage.setItem('ruilin_cards_done', JSON.stringify(doneList));
+            
+            // 局部更新
+            renderGrid(document.querySelector('.filter-btn.active').innerText === '全部' ? 'all' : document.querySelector('.filter-btn.active').innerText);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = cardsData.length;
+            const done = doneList.length;
+            document.getElementById('doneCount').innerText = done;
+            
+            const pct = (done / total) * 100;
+            document.getElementById('progBar').style.width = `${pct}%`;
+        }
+
+        function filterCards(type) {
+            // UI Button State
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === type || (type === 'all' && btn.innerText === '全部')) {
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-white', 'text-slate-900');
+                    btn.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-white');
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                }
+            });
+            renderGrid(type);
+        }
+
+        function pickRandom() {
+            const notDone = cardsData.filter(c => !doneList.includes(c.id));
+            if(notDone.length === 0) {
+                alert("太棒了！你已经完成了所有卡片！🎉");
+                return;
+            }
+            const randomCard = notDone[Math.floor(Math.random() * notDone.length)];
+            alert(`🎲 命运卡片抽取：\n\n【${randomCard.subject}】${randomCard.title}\n\n${randomCard.quote}\n\n快去列表里找到它并完成吧！`);
+        }
+
+        function confettiEffect() {
+            console.log("Card Done! 🎉");
+        }
+
+        // Init
+        renderGrid();
+        updateProgress();
+
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>

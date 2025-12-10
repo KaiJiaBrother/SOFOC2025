@@ -1,0 +1,392 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石佩霖的备考能量站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 卡片基础样式 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 选中状态 */
+        .card.is-done {
+            opacity: 0.6;
+            filter: grayscale(0.8);
+        }
+        .card.is-done::after {
+            content: "DONE";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem;
+            font-weight: 900;
+            color: #10b981;
+            border: 4px solid #10b981;
+            padding: 10px 30px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 过滤器按钮 */
+        .filter-btn {
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background-color: #1e293b;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 底部进度条 */
+        .progress-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e2e8f0;
+            padding: 15px 40px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .prog-track {
+            flex: 1;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        /* 顶部随机按钮 */
+        .random-banner {
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        .random-banner:active { transform: scale(0.99); }
+
+        /* 复选框样式 */
+        .check-circle {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .check-circle:hover { border-color: #94a3b8; }
+        .card.is-done .check-circle {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .grid-cols-3 { grid-template-columns: 1fr; }
+            .progress-fixed { padding: 10px 20px; flex-direction: column; align-items: stretch; gap: 5px; }
+            .prog-track { margin: 5px 0; }
+        }
+    </style>
+</head>
+<body class="p-6 pb-24 max-w-[1400px] mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <div class="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">EXCLUSIVE FOR PEILIN</div>
+            <h1 class="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+                备考能量站 <span class="text-amber-500">⚡</span>
+            </h1>
+        </div>
+        <div class="text-right">
+            <div class="text-xs font-bold text-gray-400 uppercase">Total Cards</div>
+            <div class="text-3xl font-black text-slate-900" id="totalCount">30</div>
+        </div>
+    </div>
+
+    <!-- Random Button -->
+    <div class="random-banner shadow-lg shadow-indigo-500/20" onclick="pickRandom()">
+        <span>🎲</span> 今天练什么？点我抽取惊喜
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-3 overflow-x-auto pb-6 mb-2 no-scrollbar" id="filterContainer">
+        <button class="filter-btn active px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('all')">全部</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('语文')">语文</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('数学')">数学</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('英语')">英语</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('物理')">物理</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('道法')">道法</button>
+        <button class="filter-btn px-5 py-2 rounded-full bg-white border border-gray-200 text-sm whitespace-nowrap" onclick="filterCards('心语')">To You</button>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cardGrid">
+        <!-- Cards will be injected here via JS -->
+    </div>
+
+    <!-- Fixed Footer -->
+    <div class="progress-fixed">
+        <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</div>
+        <div class="prog-track">
+            <div class="prog-fill" id="progBar"></div>
+        </div>
+        <div class="text-sm font-bold text-slate-800 whitespace-nowrap">
+            <span id="doneCount">0</span> / <span id="totalDisplay">30</span> Done
+        </div>
+    </div>
+
+    <script>
+        // --- 石佩霖专属数据源 (5 subjects + To You = 30 cards) ---
+        // 科目：语文、数学、英语、物理、POLITICS (道法)
+        const cardsData = [
+            // --- 1. 语文 (Chinese) - Red ---
+            { id: 101, subject: "语文", en: "CHINESE", color: "red", title: "文言文实词", quote: "“解释对了，分就拿到了。”", review: "文言文失分多在实词解释不准确。‘走’是跑，‘去’是离开。这些古今异义词必须死记硬背，不能用现代汉语去套。", action: "整理课本中《陈涉世家》或《出师表》的5个重点实词解释。" },
+            { id: 102, subject: "语文", en: "CHINESE", color: "red", title: "现代文概括", quote: "“答案都在文章里。”", review: "说明文和议论文阅读，考的是筛选信息。概括要点时，先找中心句，再合并同类项。千万不要脱离文本自己发挥。", action: "做一篇说明文阅读，用红笔划出所有答案的出处。" },
+            { id: 103, subject: "语文", en: "CHINESE", color: "red", title: "作文立意", quote: "“以小见大，真情实感。”", review: "初三作文切忌空洞喊口号。从生活中的小事入手（如一次做饭、一次争吵），挖掘出成长的道理。细节描写是加分项。", action: "写一个200字的片段，描写一个让你感动的瞬间（注重动作/心理）。" },
+            { id: 104, subject: "语文", en: "CHINESE", color: "red", title: "名著阅读", quote: "“情节人物要对号入座。”", review: "《水浒传》《简爱》等必读名著，不仅要知道人名，还要知道关键情节。比如鲁智深倒拔垂杨柳，性格是粗中有细。", action: "列出《水浒传》中宋江的三个主要性格特点及对应情节。" },
+            { id: 105, subject: "语文", en: "CHINESE", color: "red", title: "基础默写", quote: "“一字不错才是硬道理。”", review: "古诗文默写是绝对不能丢分的。错一个字扣全分。平时背诵时就要动笔写，特别注意通假字和难写字。", action: "默写《岳阳楼记》中的千古名句，并检查有没有错别字。" },
+
+            // --- 2. 数学 (Math) - Blue (痛点：二次函数 & 计算) ---
+            { id: 201, subject: "数学", en: "MATH", color: "blue", title: "二次函数图像", quote: "“开口、对称轴、顶点。”", review: "二次函数是初三的难点。看到解析式，立马反应出开口方向(a)、对称轴(-b/2a)和顶点坐标。这是解决所有大题的第一步。", action: "画出 y=-(x-1)²+2 的草图，标出顶点和对称轴。" },
+            { id: 202, subject: "数学", en: "MATH", color: "blue", title: "计算稳定性", quote: "“草稿纸要像试卷一样整洁。”", review: "计算出错不是因为笨，是因为乱。解方程、去括号、移项，每一步都要在草稿纸上写清楚。慢就是快，算对一次比算错改三次更省时间。", action: "做5道纯计算题（含根式、乘方），要求零失误。" },
+            { id: 203, subject: "数学", en: "MATH", color: "blue", title: "相似三角形", quote: "“A字型，8字型。”", review: "几何证明题看不出相似？找平行线！平行出相似。熟练掌握‘A字型’和‘8字型’基本模型，辅助线往往就是构造平行。", action: "在纸上画出相似三角形的‘A字型’和‘8字型’结构图。" },
+            { id: 204, subject: "数学", en: "MATH", color: "blue", title: "动点问题", quote: "“化动为静，分类讨论。”", review: "压轴题的动点问题不要慌。设时间为t，用t表示线段长。根据点的位置（拐点）进行分类讨论。先拿第一问的分。", action: "找一道动点真题，只列出第一种情况的方程，不求解。" },
+            { id: 205, subject: "数学", en: "MATH", color: "blue", title: "错题本利用", quote: "“常看常新。”", review: "初三复习节奏快，错题本是最好的教材。周末不要只顾着刷题，把这周的错题拿出来，盖住答案再说一遍思路。", action: "重做本周数学周测中错得最离谱的一道题。" },
+
+            // --- 3. 英语 (English) - Emerald ---
+            { id: 301, subject: "英语", en: "ENGLISH", color: "emerald", title: "完形填空", quote: "“上下文逻辑是解题金钥匙。”", review: "完形填空不要只看空格那句话。看前一句的提示，看后一句的转折。注意and, but, however这些逻辑词。", action: "做一篇完形填空，用荧光笔画出每个答案在文中的线索词。" },
+            { id: 302, subject: "英语", en: "ENGLISH", color: "emerald", title: "中式英语", quote: "“用英语思维写作。”", review: "作文里少用直译。好好学习（study hard），天天向上（make progress every day）。多背一些地道的短语搭配和句型。", action: "积累3个用于作文结尾的高级句型（如 Only by doing... can we...）。" },
+            { id: 303, subject: "英语", en: "ENGLISH", color: "emerald", title: "词汇变形", quote: "“词性要敏感。”", review: "语法填空常考词性转换。careful (adj) -> carefully (adv) -> care (n/v)。看到空格在名词前，填形容词；在动词旁，填副词。", action: "整理10个常见的名词变形容词的后缀规律（如 -ful, -able）。" },
+            { id: 304, subject: "英语", en: "ENGLISH", color: "emerald", title: "阅读细节", quote: "“回文定位，同义替换。”", review: "阅读理解的答案一定在文章里。不要凭印象选。找到题目中的关键词，回原文定位，选项通常是原文的改写。", action: "做一篇阅读理解，找出所有正确选项对应的原文句子。" },
+            { id: 305, subject: "英语", en: "ENGLISH", color: "emerald", title: "书写规范", quote: "“衡水体练起来。”", review: "中考英语作文，卷面分很重要。字母要饱满，基准线要齐。一手好字能让阅卷老师多给2分。", action: "临摹10分钟英语字帖，注意字母g, y, f的下笔位置。" },
+
+            // --- 4. 物理 (Physics) - Violet (难点：电学) ---
+            { id: 401, subject: "物理", en: "PHYSICS", color: "violet", title: "欧姆定律", quote: "“I=U/R，电学的灵魂。”", review: "所有电路计算的核心都是欧姆定律。一定要注意‘同一性’：I, U, R必须是同一个导体在同一时刻的数值，不能张冠李戴。", action: "写出欧姆定律及其两个变形公式，并注明适用条件。" },
+            { id: 402, subject: "物理", en: "PHYSICS", color: "violet", title: "电路故障", quote: "“串联断路，电压表测电源。”", review: "电路故障判断是难点。串联电路中，如果电流表无示数，电压表接近电源电压，那电压表并联的部分断路了。死记这个模型！", action: "画图分析串联电路中灯泡断路和短路时，电表的示数变化。" },
+            { id: 403, subject: "物理", en: "PHYSICS", color: "violet", title: "动态电路", quote: "“滑片移动，牵一发而动全身。”", review: "滑片P移动 -> R变 -> R总变 -> I总变。按照这个逻辑链条去分析。注意：电压表测的是哪部分电压？", action: "做一道滑动变阻器滑片移动导致电表示数变化的分析题。" },
+            { id: 404, subject: "物理", en: "PHYSICS", color: "violet", title: "电功率", quote: "“灯泡亮度看实际功率。”", review: "额定功率是贴在铭牌上的，实际功率是算出来的。灯泡亮不亮，只看实际功率P实。P=UI=I²R=U²/R，公式选对事半功倍。", action: "推导纯电阻电路中电功率的四个计算公式。" },
+            { id: 405, subject: "物理", en: "PHYSICS", color: "violet", title: "作图规范", quote: "“尺规作图，符号标准。”", review: "画电路图要用尺子！导线要横平竖直，元件符号要标准。实物连接图导线不能交叉。这些细节决定成败。", action: "徒手画一个规范的‘测小灯泡电阻’的电路图（要求横平竖直）。" },
+
+            // --- 5. 道法 (Politics) - Rose (Corrected Term) ---
+            { id: 501, subject: "道法", en: "POLITICS", color: "rose", title: "核心术语", quote: "“用教材原话，别自己编。”", review: "道法大题扣分往往因为口语化。别说“国家管得好”，要说“坚持依法治国基本方略”；别说“大家一起商量”，要说“协商民主”。", action: "背诵“根本政治制度”和“基本政治制度”的具体名称。" },
+            { id: 502, subject: "道法", en: "POLITICS", color: "rose", title: "答题模板", quote: "“是什么-为什么-怎么做。”", review: "遇到分析题，脑子里要有个框架。是什么（问题本质），为什么（原因/意义/国情），怎么做（国家/社会/公民）。", action: "找一道关于“创新”的主观题，列出三个维度的答题要点。" },
+            { id: 503, subject: "道法", en: "POLITICS", color: "rose", title: "国情战略", quote: "“富强民主文明和谐。”", review: "初三上学期重点是国情。要分清“强国之路”（改革开放）、“第一动力”（创新）、“生命线”（环境）。这些关键词是得分点。", action: "默写社会主义核心价值观的24个字。" },
+            { id: 504, subject: "道法", en: "POLITICS", color: "rose", title: "法治意识", quote: "“法无授权不可为。”", review: "法治模块要搞清政府的职能是“行政”，不是“司法”。人大是“权力机关”。易混淆的概念要对比记忆，选择题常设坑。", action: "画出“一府一委两院”与人大关系的示意图。" },
+            { id: 505, subject: "道法", en: "POLITICS", color: "rose", title: "时事热点", quote: "“家事国事天下事。”", review: "道法考试离不开热点（如科技成就、环保行动）。看到材料要能联想到课本知识点：科技成就->创新驱动发展战略。", action: "列举2个近期的国家科技成就，并关联对应的道法知识点。" },
+
+            // --- 7. 心语 (To You) - Amber (Mentor Tony) - Artistic Focus ---
+            { id: 901, subject: "心语", en: "TO YOU", color: "amber", title: "科学里的艺术", quote: "“像看画一样看几何。”", review: "佩霖，你有别人没有的艺术眼光。试着把数学的抛物线看作完美的构图，把物理的电路图看作流动的线条。数学和物理，其实有着最纯粹的对称美和逻辑美。用你的艺术直觉去欣赏它们。", action: "画一张富有设计感的“知识结构图”，不用拘泥于形式。" },
+            { id: 902, subject: "心语", en: "TO YOU", color: "amber", title: "敏感是天赋", quote: "“Your sensitivity is a superpower.”", review: "搞艺术的人都有一颗敏感的心，这在语文和英语学习中是巨大的优势。阅读理解不仅是做题，更是去感受作者的情绪。用你的共情力去体会文章，答案往往就藏在那些细微的情感里。", action: "闭上眼，想象一下今天英语阅读中主角的处境。" },
+            { id: 903, subject: "心语", en: "TO YOU", color: "amber", title: "草稿与杰作", quote: "“所有杰作都始于草稿。”", review: "没有一幅画是一笔画成的，都需要反复修改。错题就是你的“草稿”。不要害怕做错，每一次订正都是在给你的“中考大作”上色和修饰。享受这个打磨的过程。", action: "把一道很难的物理题，当成一次素描练习，耐心拆解。" },
+            { id: 904, subject: "心语", en: "TO YOU", color: "amber", title: "观察者视角", quote: "“用画笔记录世界，用道法理解社会。”", review: "你擅长观察事物的形态，道法（Politics）其实就是观察社会的形态。法律、国情、制度，这些都是社会的“骨架”。像画人体结构一样去理解国家的结构，你会发现其中的逻辑之美。", action: "试着画出“人大”与“一府两院”的结构关系图。" },
+            { id: 905, subject: "心语", en: "TO YOU", color: "amber", title: "独特的画布", quote: "“考试只是背景色。”", review: "佩霖，中考很重要，但它不是你人生的全部，它只是你当前这幅画的背景色。你的艺术才华是你最亮眼的主体。保持你的独特，用备考磨练出的坚韧心性，去滋养你未来的艺术创作。", action: "累的时候画几笔画，那是你的充电站。" }
+        ];
+
+        // --- 逻辑部分 ---
+        let doneList = JSON.parse(localStorage.getItem('peilin_cards_done') || '[]');
+        document.getElementById('totalCount').innerText = cardsData.length;
+        document.getElementById('totalDisplay').innerText = cardsData.length;
+
+        function renderGrid(filter = 'all') {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            
+            const filtered = filter === 'all' 
+                ? cardsData 
+                : cardsData.filter(c => c.subject === filter);
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">暂无该分类卡片</div>`;
+                return;
+            }
+
+            filtered.forEach(card => {
+                const isDone = doneList.includes(card.id);
+                // 动态颜色类
+                const bgLight = `bg-${card.color}-50`;
+                const textDark = `text-${card.color}-800`;
+                const textBase = `text-${card.color}-600`;
+                const bgBase = `bg-${card.color}-500`; // 复盘标签背景
+
+                const html = `
+                <div class="card ${isDone ? 'is-done' : ''}" onclick="toggleCard(${card.id})">
+                    <div class="p-6 flex-1">
+                        <!-- Top Row -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${bgBase}"></span>
+                                <span class="text-xs font-bold ${textBase} tracking-widest uppercase">${card.en}</span>
+                            </div>
+                            <div class="check-circle" id="check-${card.id}">
+                                ${isDone ? '✓' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Title & Quote -->
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2 leading-tight">${card.title}</h2>
+                        <p class="text-gray-400 italic text-sm mb-6 font-serif">${card.quote}</p>
+
+                        <!-- Review Box -->
+                        <div class="${bgLight} rounded-xl p-4 mb-4 relative overflow-hidden">
+                             <div class="absolute top-0 left-0 ${bgBase} text-white text-[10px] font-bold px-2 py-1 rounded-br-lg">
+                                核心复盘
+                            </div>
+                            <p class="${textDark} text-sm leading-relaxed mt-2 text-justify">
+                                ${card.review}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Footer -->
+                    <div class="bg-slate-900 p-4 text-white">
+                        <div class="flex items-start gap-3">
+                            <span class="text-xl">🚀</span>
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Action</div>
+                                <div class="text-sm font-medium leading-snug">${card.action}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                grid.innerHTML += html;
+            });
+        }
+
+        function toggleCard(id) {
+            if(doneList.includes(id)) {
+                doneList = doneList.filter(d => d !== id);
+            } else {
+                doneList.push(id);
+                // 简单的庆祝效果
+                confettiEffect();
+            }
+            localStorage.setItem('peilin_cards_done', JSON.stringify(doneList));
+            
+            // 局部更新
+            renderGrid(document.querySelector('.filter-btn.active').innerText === '全部' ? 'all' : document.querySelector('.filter-btn.active').innerText);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = cardsData.length;
+            const done = doneList.length;
+            document.getElementById('doneCount').innerText = done;
+            
+            const pct = (done / total) * 100;
+            document.getElementById('progBar').style.width = `${pct}%`;
+        }
+
+        function filterCards(type) {
+            // UI Button State
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === type || (type === 'all' && btn.innerText === '全部')) {
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-white', 'text-slate-900');
+                    btn.classList.add('bg-slate-800', 'text-white');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-white');
+                    btn.classList.remove('bg-slate-800', 'text-white');
+                }
+            });
+            renderGrid(type);
+        }
+
+        function pickRandom() {
+            const notDone = cardsData.filter(c => !doneList.includes(c.id));
+            if(notDone.length === 0) {
+                alert("太棒了！你已经完成了所有卡片！🎉");
+                return;
+            }
+            const randomCard = notDone[Math.floor(Math.random() * notDone.length)];
+            alert(`🎲 命运卡片抽取：\n\n【${randomCard.subject}】${randomCard.title}\n\n${randomCard.quote}\n\n快去列表里找到它并完成吧！`);
+        }
+
+        function confettiEffect() {
+            console.log("Card Done! 🎉");
+        }
+
+        // Init
+        renderGrid();
+        updateProgress();
+
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>
